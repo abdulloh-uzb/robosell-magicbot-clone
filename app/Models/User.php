@@ -13,7 +13,7 @@ use Spatie\Permission\Traits\HasRoles;
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, TwoFactorAuthenticatable, HasRoles;
+    use HasFactory, HasRoles, Notifiable, TwoFactorAuthenticatable;
 
     /**
      * The attributes that are mass assignable.
@@ -24,6 +24,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'phone',
+        'is_blocked',
     ];
 
     /**
@@ -49,12 +51,17 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
+            'is_blocked' => 'boolean',
         ];
     }
 
     public function bot(): HasOne
     {
-        return $this->hasOne(Bot::class);
+        return $this->hasOne(Bot::class, 'seller_id');
     }
 
+    public function instagramAccount(): HasOne
+    {
+        return $this->hasOne(InstagramAccount::class, 'seller_id');
+    }
 }
