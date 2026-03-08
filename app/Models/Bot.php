@@ -10,7 +10,7 @@ class Bot extends Model
 {
     protected $guarded = [];
 
-    public function owner(): BelongsTo
+    public function seller(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
@@ -25,9 +25,11 @@ class Bot extends Model
         return $this->hasMany(Category::class);
     }
 
-    public function customers(): HasMany
+    public function customers()
     {
-        return $this->hasMany(Customer::class);
+        return $this->belongsToMany(Customer::class, 'bot_customer')
+            ->withPivot('is_blocked')
+            ->withTimestamps();
     }
 
     public function orders(): HasMany

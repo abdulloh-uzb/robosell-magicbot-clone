@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Seller\BotController;
+use App\Http\Controllers\Settings\InstagramController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\TwoFactorAuthenticationController;
@@ -28,4 +30,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('settings/two-factor', [TwoFactorAuthenticationController::class, 'show'])
         ->name('two-factor.show');
+
+    Route::resource('settings/bots', BotController::class)->except(['show', 'edit', 'create']);
+    Route::patch('settings/bots/{bot}/channel', [BotController::class, 'update'])->name('bots.channel.update');
+
+    Route::get('settings/instagram', [InstagramController::class, 'show'])->name('instagram.show');
+    Route::get('settings/instagram/connect', [InstagramController::class, 'connect'])->name('instagram.connect');
+    Route::get('settings/instagram/callback', [InstagramController::class, 'callback'])->name('instagram.callback');
+    Route::delete('settings/instagram', [InstagramController::class, 'disconnect'])->name('instagram.disconnect');
 });

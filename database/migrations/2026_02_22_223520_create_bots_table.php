@@ -16,7 +16,8 @@ return new class extends Migration
             $table->string('token')->unique();
             $table->string('username')->unique();
             $table->string('name');
-            $table->foreignId('owner_id')->constrained('users')->cascadeOnDelete();
+            $table->string('image')->nullable();
+            $table->foreignId('seller_id')->constrained('users')->cascadeOnDelete();
             $table->timestamps();
         });
     }

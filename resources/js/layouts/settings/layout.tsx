@@ -28,6 +28,16 @@ const sidebarNavItems: NavItem[] = [
         icon: null,
     },
     {
+        title: 'Bots & Channels',
+        href: '/settings/bots',
+        icon: null,
+    },
+    {
+        title: 'Instagram',
+        href: '/settings/instagram',
+        icon: null,
+    },
+    {
         title: 'Appearance',
         href: editAppearance(),
         icon: null,
