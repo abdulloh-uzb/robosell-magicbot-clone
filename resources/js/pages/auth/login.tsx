@@ -10,6 +10,8 @@ import AuthLayout from '@/layouts/auth-layout';
 import { register } from '@/routes';
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useState } from 'react';
 
 type Props = {
     status?: string;
@@ -22,35 +24,68 @@ export default function Login({
     canResetPassword,
     canRegister,
 }: Props) {
+    const [loginType, setLoginType] = useState<'seller' | 'admin'>('seller');
+
     return (
         <AuthLayout
             title="Log in to your account"
-            description="Enter your email and password below to log in"
+            description={loginType === 'seller' ? "Enter your phone and password" : "Enter your email and password"}
         >
             <Head title="Log in" />
 
+            <Tabs value={loginType} onValueChange={(v) => {
+                setLoginType(v as 'seller' | 'admin');
+            }} className="w-full mb-6">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="seller">Seller</TabsTrigger>
+                    <TabsTrigger value="admin">Admin</TabsTrigger>
+                </TabsList>
+            </Tabs>
+
             <Form
-                {...store.form()}
+                {...store.form({
+                    email: '',
+                    phone_number: '',
+                    password: '',
+                    remember: false,
+                })}
                 resetOnSuccess={['password']}
                 className="flex flex-col gap-6"
             >
                 {({ processing, errors }) => (
                     <>
                         <div className="grid gap-6">
-                            <div className="grid gap-2">
-                                <Label htmlFor="email">Email address</Label>
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    name="email"
-                                    required
-                                    autoFocus
-                                    tabIndex={1}
-                                    autoComplete="email"
-                                    placeholder="email@example.com"
-                                />
-                                <InputError message={errors.email} />
-                            </div>
+                            {loginType === 'admin' ? (
+                                <div className="grid gap-2">
+                                    <Label htmlFor="email">Email address</Label>
+                                    <Input
+                                        id="email"
+                                        type="email"
+                                        name="email"
+                                        required
+                                        autoFocus
+                                        tabIndex={1}
+                                        autoComplete="email"
+                                        placeholder="admin@example.com"
+                                    />
+                                    <InputError message={errors.email} />
+                                </div>
+                            ) : (
+                                <div className="grid gap-2">
+                                    <Label htmlFor="phone">Phone Number</Label>
+                                    <Input
+                                        id="phone"
+                                        type="text"
+                                        name="phone_number"
+                                        required
+                                        autoFocus
+                                        tabIndex={1}
+                                        autoComplete="tel"
+                                        placeholder="+998123456789"
+                                    />
+                                    <InputError message={errors.email} />
+                                </div>
+                            )}
 
                             <div className="grid gap-2">
                                 <div className="flex items-center">

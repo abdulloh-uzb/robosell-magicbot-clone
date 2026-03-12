@@ -4,8 +4,11 @@ namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
+use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
@@ -20,7 +23,10 @@ class FortifyServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(
+            \Laravel\Fortify\Http\Requests\LoginRequest::class,
+            \App\Http\Requests\LoginRequest::class
+        );
     }
 
     /**
@@ -47,6 +53,25 @@ class FortifyServiceProvider extends ServiceProvider
      */
     private function configureViews(): void
     {
+        Fortify::authenticateUsing(function (Request $request) {
+            $user = null;
+
+            if ($request->has('email')) {
+                $user = User::where('email', $request->email)->first();
+            } elseif ($request->has('phone_number')) {
+                $user = User::where('phone', $request->phone_number)->first();
+                Log::info($user);
+            }
+
+            if ($user && Hash::check($request->password, $user->password)) {
+                Log::info('Password matched');
+
+                return $user;
+            }
+
+            return null;
+        });
+
         Fortify::loginView(fn (Request $request) => Inertia::render('auth/login', [
             'canResetPassword' => Features::enabled(Features::resetPasswords()),
             'canRegister' => Features::enabled(Features::registration()),
