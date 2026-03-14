@@ -13,7 +13,6 @@ return new class extends Migration
     {
         Schema::create('customers', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('bot_id')->constrained()->cascadeOnDelete();
             $table->string('telegram_id')->unique();
             $table->string('first_name')->nullable();
             $table->string('last_name')->nullable();

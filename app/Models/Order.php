@@ -2,11 +2,19 @@
 
 namespace App\Models;
 
+use App\Enums\OrderStatus;
+use App\Models\Traits\BelongsToSeller;
 use Illuminate\Database\Eloquent\Model;
 
 class Order extends Model
 {
+    use BelongsToSeller;
+
     protected $guarded = [];
+
+    protected $casts = [
+        'status' => OrderStatus::class,
+    ];
 
     public function bot()
     {
