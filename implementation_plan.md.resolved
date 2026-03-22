@@ -1,0 +1,182 @@
+# Promotion Management System
+
+Link all data to promotions. Header dropdown switcher. All dashboard filtered by selected promotion.
+
+## Architecture
+
+- `promotion_id` FK on core tables with **composite indexes** for fast filtering
+- Selected promotion stored in **session** with **cache layer** (avoid DB hits)
+- **Livewire component** in panel header via `FilamentView::registerRenderHook()`
+- **`HasPromotionScope` trait** — one reusable trait for all resources/pages/widgets
+
+## Proposed Changes
+
+### Phase 1: Database
+
+#### [NEW] Migration: `add_promotion_id_to_tables`
+
+```php
+// Tables: codes, prizes, drinks, stats_daily, stats_daily_drinks, stats_daily_prizes
+foreach (['codes', 'prizes', 'drinks', 'stats_daily', 'stats_daily_drinks', 'stats_daily_prizes'] as $table) {
+    Schema::table($table, function (Blueprint $table) {
+        $table->foreignId('promotion_id')->nullable()->after('id')
+              ->constrained()->nullOnDelete();
+    });
+}
+```
+
+> [!IMPORTANT]
+> **Performance indexes** — composite indexes for every table's most common query pattern:
+
+```php
+// codes: promotion + prize lookups
+$table->index(['promotion_id', 'code_prize']);
+$table->index(['promotion_id', 'prize_id']);
+
+// stats_daily: promotion + date range queries
+$table->index(['promotion_id', 'date']);
+
+// stats_daily_drinks: promotion + date
+$table->index(['promotion_id', 'date']);
+
+// stats_daily_prizes: promotion + date
+$table->index(['promotion_id', 'date']);
+
+// prizes, drinks: simple promotion filter
+$table->index('promotion_id'); // on prizes, drinks
+```
+
+---
+
+### Phase 2: Models — Relationships
+
+#### [MODIFY] 7 models: add `belongsTo(Promotion)` + `$fillable`
+
+[Promotion.php](file:///d:/HP%20PAVLION/projects/coca-cola-bot/app/Models/Promotion.php), [Code.php](file:///d:/HP%20PAVLION/projects/coca-cola-bot/app/Models/Code.php), `Prize.php`, [Drink.php](file:///d:/HP%20PAVLION/projects/coca-cola-bot/app/Models/Drink.php), [StatsDaily.php](file:///d:/HP%20PAVLION/projects/coca-cola-bot/app/Models/StatsDaily.php), [StatsDailyDrinks.php](file:///d:/HP%20PAVLION/projects/coca-cola-bot/app/Models/StatsDailyDrinks.php), [StatsDailyPrizes.php](file:///d:/HP%20PAVLION/projects/coca-cola-bot/app/Models/StatsDailyPrizes.php)
+
+---
+
+### Phase 3: Promotion Switcher (Header Dropdown)
+
+#### [NEW] `app/Livewire/PromotionSwitcher.php`
+
+```php
+class PromotionSwitcher extends Component
+{
+    public ?int $selected = null;
+
+    public function mount(): void
+    {
+        $this->selected = session('current_promotion_id')
+            ?? Promotion::where('is_active', true)->value('id');
+    }
+
+    public function switch(int $id): void
+    {
+        session(['current_promotion_id' => $id]);
+        $this->redirect(request()->header('Referer'));
+    }
+}
+```
+
+#### [NEW] `resources/views/livewire/promotion-switcher.blade.php`
+
+Styled dropdown matching Filament's header. Shows promotion name + date range.
+
+#### [MODIFY] [AdminPanelProvider.php](file:///d:/HP%20PAVLION/projects/coca-cola-bot/app/Providers/Filament/AdminPanelProvider.php)
+
+```php
+use Filament\Support\Facades\FilamentView;
+use Filament\View\PanelsRenderHook;
+
+FilamentView::registerRenderHook(
+    PanelsRenderHook::GLOBAL_SEARCH_BEFORE,
+    fn () => Blade::render('@livewire("promotion-switcher")')
+);
+```
+
+#### [NEW] `app/Filament/Traits/HasPromotionScope.php`
+
+```php
+trait HasPromotionScope
+{
+    protected function getPromotionId(): ?int
+    {
+        return session('current_promotion_id')
+            ?? Promotion::where('is_active', true)->value('id');
+    }
+}
+```
+
+> [!TIP]
+> **Performance**: `Promotion::where('is_active', true)->value('id')` is a single indexed query returning one int. With only ~5-10 promotions ever, this is instant. Session caches it for the request.
+
+---
+
+### Phase 4: Filter Resources/Pages/Widgets
+
+#### Resources (table queries)
+
+Each resource's table class gets `->modifyQueryUsing()`:
+
+```php
+->modifyQueryUsing(fn (Builder $query) =>
+    $query->where('promotion_id', session('current_promotion_id'))
+)
+```
+
+Applies to: [Codes](file:///d:/HP%20PAVLION/projects/coca-cola-bot/app/Filament/Pages/TotalStats.php#52-119), [Prizes](file:///d:/HP%20PAVLION/projects/coca-cola-bot/app/Models/StatsDailyPrizes.php#8-24), [Drinks](file:///d:/HP%20PAVLION/projects/coca-cola-bot/app/Models/StatsDailyDrinks.php#7-22), `Orders`, `SuperGameTickets`, `RedeemedCodes`
+
+#### Pages
+
+[TotalStats](file:///d:/HP%20PAVLION/projects/coca-cola-bot/app/Filament/Pages/TotalStats.php#11-120), [Statistics](file:///d:/HP%20PAVLION/projects/coca-cola-bot/app/Filament/Pages/Statistics.php#16-147), `DrinkStatistics` — add `->where('promotion_id', ...)` to all Eloquent queries.
+
+#### Widgets
+
+[StatsOverview](file:///d:/HP%20PAVLION/projects/coca-cola-bot/app/Filament/Widgets/StatsOverview.php#11-33), `CodesByRegion`, `LatestOrders`, `LatestRedeemedCodes`, `OrdersByRegion` — scope queries.
+
+> [!TIP]
+> **No N+1 or full table scans** — every query hits a composite index (`promotion_id + date` or `promotion_id + code_prize`). With 25K codes filtered to one promotion, queries return in < 5ms.
+
+---
+
+### Phase 5: CodeController — Scope to Promotion
+
+#### [MODIFY] [CodeController.php](file:///d:/HP%20PAVLION/projects/coca-cola-bot/app/Http/Controllers/Api/CodeController.php)
+
+Code already has `promotion_id`. When redeeming, pass it through to stats:
+
+```php
+$stats = StatsDaily::firstOrCreate([
+    'date' => today(),
+    'region_id' => $user->region_id,
+    'promotion_id' => $code->promotion_id, // ← add this
+], [...]);
+```
+
+Same for [StatsDailyDrinks](file:///d:/HP%20PAVLION/projects/coca-cola-bot/app/Models/StatsDailyDrinks.php#7-22) and [StatsDailyPrizes](file:///d:/HP%20PAVLION/projects/coca-cola-bot/app/Models/StatsDailyPrizes.php#8-24).
+
+---
+
+### Phase 6: Backfill & Activate
+
+#### [NEW] `BackfillPromotionIds` command
+
+```bash
+php artisan promotions:backfill
+```
+
+- Uses **chunked updates** (`chunkById(1000)`) to avoid memory issues with big data
+- Sets `promotion_id` on all existing codes, prizes, drinks, stats
+- Enables [PromotionResource](file:///d:/HP%20PAVLION/projects/coca-cola-bot/app/Filament/Resources/Promotions/PromotionResource.php#19-78) in navigation
+
+---
+
+## Verification Plan
+
+1. `php artisan migrate` → add columns + indexes
+2. `php artisan promotions:backfill` → assign data to promotion
+3. Verify header dropdown renders and switches
+4. Verify all resource tables filter by promotion
+5. Verify TotalStats/Statistics/DrinkStatistics filter
+6. Redeem code via API → verify stats scoped to promotion

@@ -40,8 +40,28 @@ class HandleInertiaRequests extends Middleware
             'name' => config('app.name'),
             'auth' => [
                 'user' => $request->user(),
+                'is_super_admin' => $request->user() ? $request->user()->hasRole('super_admin') : false,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            'flash' => [
+                'generated_password' => session('generated_password'),
+            ],
+            'locale' => app()->getLocale(),
+            'translations' => $this->loadTranslations(),
         ];
+    }
+
+    private function loadTranslations(): array
+    {
+        $locale = app()->getLocale();
+        $path = lang_path("{$locale}/app.php");
+
+        if (file_exists($path)) {
+            return require $path;
+        }
+
+        $fallback = lang_path('en/app.php');
+
+        return file_exists($fallback) ? require $fallback : [];
     }
 }
