@@ -44,7 +44,7 @@ const mainNavItems: NavItem[] = [
         icon: Tags,
     },
     {
-        title: 'Chat',
+        title: 'Inbox',
         href: '/chat',
         icon: MessageCircle,
     },
@@ -52,11 +52,6 @@ const mainNavItems: NavItem[] = [
         title: 'Channel',
         href: '/channel',
         icon: Radio,
-    },
-    {
-        title: 'Instagram DMs',
-        href: '/instagram/chat',
-        icon: Instagram,
     },
 ];
 

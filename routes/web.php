@@ -34,15 +34,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('orders', OrderController::class)->only(['index', 'show', 'update']);
         Route::resource('customers', CustomerController::class)->only(['index']);
         Route::get('chat', [ChatController::class, 'index'])->name('chat.index');
-        Route::get('chat/{customer}', [ChatController::class, 'show'])->name('chat.show');
-        Route::post('chat/{customer}/send', [ChatController::class, 'send'])->name('chat.send');
+        Route::get('chat/{platform}/{id}/messages', [ChatController::class, 'messages'])->name('chat.messages');
+        Route::post('chat/{platform}/{id}/send', [ChatController::class, 'send'])->name('chat.send');
 
         Route::get('channel', [ChannelController::class, 'index'])->name('channel.index');
         Route::post('channel/post', [ChannelController::class, 'post'])->name('channel.post');
-
-        Route::get('instagram/chat', [InstagramChatController::class, 'index'])->name('instagram.chat.index');
-        Route::get('instagram/chat/{senderId}', [InstagramChatController::class, 'show'])->name('instagram.chat.show');
-        Route::post('instagram/chat/{senderId}/send', [InstagramChatController::class, 'send'])->name('instagram.chat.send');
     });
 });
 
@@ -67,4 +63,4 @@ Route::prefix('store/{bot:username}')->name('store.')->group(function () {
     Route::get('/profile', [StoreController::class, 'profile'])->name('profile')->middleware('telegram.webapp');
 });
 
-require __DIR__.'/settings.php';
+require __DIR__ . '/settings.php';
