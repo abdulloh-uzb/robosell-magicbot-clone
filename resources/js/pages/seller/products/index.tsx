@@ -15,7 +15,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Download, Edit, ImageIcon, Plus, Trash2, Upload, X } from 'lucide-react';
+import { Download, Edit, ImageIcon, Plus, Star, Trash2, Upload, X } from 'lucide-react';
 
 interface Variant {
     id?: number;
@@ -38,6 +38,7 @@ interface Product {
     price: number;
     quantity: number;
     description: string;
+    is_featured: boolean;
     category?: { name: string };
     variants: Variant[];
     images: ProductImage[];
@@ -303,13 +304,14 @@ export default function Index({ products, categories }: { products: any; categor
                                     <th className="h-10 px-4 text-left font-medium text-muted-foreground">Price</th>
                                     <th className="h-10 px-4 text-left font-medium text-muted-foreground">Qty</th>
                                     <th className="h-10 px-4 text-left font-medium text-muted-foreground">Variants</th>
+                                    <th className="h-10 px-4 text-center font-medium text-muted-foreground">Featured</th>
                                     <th className="h-10 px-4 text-right font-medium text-muted-foreground">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {products.data.length === 0 ? (
                                     <tr>
-                                        <td colSpan={6} className="h-24 text-center">
+                                        <td colSpan={7} className="h-24 text-center">
                                             No products found.
                                         </td>
                                     </tr>
@@ -340,6 +342,16 @@ export default function Index({ products, categories }: { products: any; categor
                                             <td className="p-4 align-middle">{product.quantity}</td>
                                             <td className="p-4 align-middle">
                                                 <span className="text-muted-foreground text-xs">{product.variants?.length ?? 0} variants</span>
+                                            </td>
+                                            <td className="p-4 align-middle text-center">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => router.patch(`/products/${product.id}/toggle-featured`, {}, { preserveScroll: true })}
+                                                    title={product.is_featured ? 'Remove from featured' : 'Mark as featured'}
+                                                >
+                                                    <Star className={`h-4 w-4 ${product.is_featured ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'}`} />
+                                                </Button>
                                             </td>
                                             <td className="p-4 align-middle text-right">
                                                 <Button variant="ghost" size="icon" onClick={() => openEditModal(product)}>

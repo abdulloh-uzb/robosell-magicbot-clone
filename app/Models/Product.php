@@ -13,6 +13,14 @@ class Product extends Model
 
     protected $guarded = [];
 
+    protected function casts(): array
+    {
+        return [
+            'is_featured' => 'boolean',
+            'price' => 'decimal:2',
+        ];
+    }
+
     public function bot(): BelongsTo
     {
         return $this->belongsTo(Bot::class);
@@ -36,5 +44,10 @@ class Product extends Model
     public function images(): HasMany
     {
         return $this->hasMany(ProductImage::class)->orderBy('sort_order');
+    }
+
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class);
     }
 }

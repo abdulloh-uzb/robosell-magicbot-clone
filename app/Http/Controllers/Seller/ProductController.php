@@ -45,6 +45,13 @@ class ProductController extends Controller
         return back()->with('success', 'Product updated successfully.');
     }
 
+    public function toggleFeatured(Product $product)
+    {
+        $product->update(['is_featured' => ! $product->is_featured]);
+
+        return back();
+    }
+
     public function destroy(Product $product)
     {
         // Delete images from storage
