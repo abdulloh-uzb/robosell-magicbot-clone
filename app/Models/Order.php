@@ -12,9 +12,12 @@ class Order extends Model
 
     protected $guarded = [];
 
-    protected $casts = [
-        'status' => OrderStatus::class,
-    ];
+    protected function casts(): array
+    {
+        return [
+            'status' => OrderStatus::class,
+        ];
+    }
 
     public function bot()
     {

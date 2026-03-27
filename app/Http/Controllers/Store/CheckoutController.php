@@ -7,23 +7,32 @@ use App\Http\Controllers\Controller;
 use App\Models\Bot;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\PaymentSetting;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use SergiX44\Nutgram\Nutgram;
 use Throwable;
 
 class CheckoutController extends Controller
 {
-    public function store(Request $request, Bot $bot)
+    public function store(Request $request, Bot $bot): JsonResponse
     {
         $customer = $request->attributes->get('customer');
+
+        $enabledTypes = PaymentSetting::withoutGlobalScope('seller')
+            ->where('bot_id', $bot->id)
+            ->where('enabled', true)
+            ->pluck('type')
+            ->toArray();
 
         $validated = $request->validate([
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
             'items.*.variant_id' => 'nullable|exists:product_variants,id',
             'items.*.quantity' => 'required|integer|min:1',
+            'payment_method' => ['required', 'in:'.implode(',', $enabledTypes)],
         ]);
 
         $totalAmount = 0;
@@ -56,6 +65,8 @@ class CheckoutController extends Controller
             'customer_id' => $customer->id,
             'status' => 'pending',
             'total_amount' => $totalAmount,
+            'payment_method' => $validated['payment_method'],
+            'payment_status' => 'unpaid',
         ]);
 
         foreach ($orderItems as $item) {
@@ -70,13 +81,32 @@ class CheckoutController extends Controller
         try {
             $nutgram = new Nutgram($bot->token);
             $nutgram->sendMessage(
-                "🛒 Your order #{$order->id} has been placed successfully!\n*Total:* \${$order->total_amount}",
+                "🛒 Your order #{$order->id} has been placed!\n*Total:* \${$order->total_amount}\n*Payment:* {$validated['payment_method']}",
                 ['chat_id' => $customer->telegram_id, 'parse_mode' => 'Markdown']
             );
         } catch (Throwable $e) {
             report($e);
         }
 
+        $paymentMethod = $validated['payment_method'];
+
+        if ($paymentMethod === 'click') {
+            return response()->json([
+                'success' => true,
+                'order_id' => $order->id,
+                'redirect_url' => route('store.payment.click', [$bot->username, $order->id]),
+            ]);
+        }
+
+        if ($paymentMethod === 'payme') {
+            return response()->json([
+                'success' => true,
+                'order_id' => $order->id,
+                'redirect_url' => route('store.payment.payme', [$bot->username, $order->id]),
+            ]);
+        }
+
+        // Cash — no redirect needed
         return response()->json(['success' => true, 'order_id' => $order->id]);
     }
 }
