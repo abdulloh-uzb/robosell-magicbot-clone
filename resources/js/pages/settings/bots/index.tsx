@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, Plus, Radio } from 'lucide-react';
+import { Trash2, Plus, Radio, RotateCcw } from 'lucide-react';
 import {
     Dialog,
     DialogContent,
@@ -70,6 +70,10 @@ export default function BotsSettings({ bots }: { bots: any[] }) {
         }
     };
 
+    const handleResetWebhook = (id: number) => {
+        router.post(`/settings/bots/${id}/reset-webhook`);
+    };
+
     return (
         <SettingsLayout>
             <Head title="Bot Settings" />
@@ -117,6 +121,16 @@ export default function BotsSettings({ bots }: { bots: any[] }) {
                                             >
                                                 <Radio className="h-3.5 w-3.5 mr-1" />
                                                 {bot.channel_id ? 'Edit Channel' : 'Connect Channel'}
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => handleResetWebhook(bot.id)}
+                                                className="text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/50"
+                                                title="Reset webhook if bot stopped receiving messages"
+                                            >
+                                                <RotateCcw className="h-3.5 w-3.5 mr-1" />
+                                                Reset
                                             </Button>
                                             <Button
                                                 variant="ghost"

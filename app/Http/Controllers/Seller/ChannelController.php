@@ -40,7 +40,10 @@ class ChannelController extends Controller
 
     public function post(Request $request): RedirectResponse
     {
-        $request->validate(['text' => 'required|string|max:4096']);
+        $request->validate([
+            'text' => 'required|string|max:4096',
+            'parse_mode' => 'nullable|in:HTML,Markdown',
+        ]);
 
         $bot = Bot::find(session('bot_id'));
 
@@ -53,6 +56,7 @@ class ChannelController extends Controller
             $sent = $nutgram->sendMessage(
                 text: $request->text,
                 chat_id: $bot->channel_id,
+                parse_mode: $request->input('parse_mode', 'HTML') ?: null,
             );
 
             TelegramMessage::create([

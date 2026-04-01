@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Head, useForm, usePage } from '@inertiajs/react';
-import { Radio, Send, Settings } from 'lucide-react';
+import { AlertCircle, Bold, Italic, Radio, Send, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 
@@ -31,13 +32,14 @@ export default function ChannelIndex({ bot, messages }: Props) {
     const { auth } = usePage<{ auth: { user: { id: number } } }>().props;
     const [msgList, setMsgList] = useState<Message[]>(messages);
     const [showChannelForm, setShowChannelForm] = useState(false);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
         { title: 'Channel', href: '/channel' },
     ];
 
-    const postForm = useForm({ text: '' });
+    const postForm = useForm({ text: '', parse_mode: 'HTML' });
     const channelForm = useForm({ channel_id: bot?.channel_id ?? '' });
 
     useEffect(() => {
@@ -93,6 +95,32 @@ export default function ChannelIndex({ bot, messages }: Props) {
         });
     };
 
+    const insertTag = (open: string, close: string) => {
+        const el = textareaRef.current;
+        if (!el) return;
+        const start = el.selectionStart;
+        const end = el.selectionEnd;
+        const selected = postForm.data.text.substring(start, end);
+        const newText =
+            postForm.data.text.substring(0, start) +
+            open + selected + close +
+            postForm.data.text.substring(end);
+        postForm.setData('text', newText);
+        setTimeout(() => {
+            el.focus();
+            el.setSelectionRange(start + open.length, start + open.length + selected.length);
+        }, 0);
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault();
+            if (postForm.data.text.trim() && bot?.channel_id && !postForm.processing) {
+                handlePost(e as any);
+            }
+        }
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Channel / Group" />
@@ -120,10 +148,14 @@ export default function ChannelIndex({ bot, messages }: Props) {
                     <form onSubmit={handleChannelSave} className="rounded-lg border p-4 space-y-3 max-w-md">
                         <div className="space-y-1">
                             <Label>Telegram Chat ID</Label>
-                            <p className="text-xs text-muted-foreground">
-                                Add @{bot.username} as admin to your channel/group, then paste the Chat ID (e.g.{' '}
-                                <code className="font-mono">-1001234567890</code> or <code className="font-mono">@mychannel</code>).
-                            </p>
+                            <div className="rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3 flex gap-2 text-sm text-amber-800 dark:text-amber-300">
+                                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                                <div>
+                                    Add <strong>@{bot.username}</strong> as <strong>admin</strong> to your channel/group.
+                                    Then get the Chat ID using <code className="font-mono bg-amber-100 dark:bg-amber-900 px-1 rounded">@getidsbot</code> in Telegram.
+                                    Channel IDs start with <code className="font-mono bg-amber-100 dark:bg-amber-900 px-1 rounded">-100</code> (e.g. <code className="font-mono">-1001234567890</code>).
+                                </div>
+                            </div>
                             <Input
                                 value={channelForm.data.channel_id}
                                 onChange={(e) => channelForm.setData('channel_id', e.target.value)}
@@ -146,23 +178,70 @@ export default function ChannelIndex({ bot, messages }: Props) {
 
                 {/* Post to channel */}
                 {bot?.channel_id && (
-                    <form onSubmit={handlePost} className="flex items-center gap-2">
-                        <Input
+                    <form onSubmit={handlePost} className="rounded-lg border p-4 space-y-3">
+                        {/* Formatting toolbar */}
+                        <div className="flex items-center gap-1">
+                            <span className="text-xs text-muted-foreground mr-1">Format:</span>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 px-2"
+                                onClick={() => insertTag('<b>', '</b>')}
+                                title="Bold"
+                            >
+                                <Bold className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 px-2"
+                                onClick={() => insertTag('<i>', '</i>')}
+                                title="Italic"
+                            >
+                                <Italic className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 px-2 font-mono text-xs"
+                                onClick={() => insertTag('<code>', '</code>')}
+                                title="Code"
+                            >
+                                {'</>'}
+                            </Button>
+                        </div>
+
+                        <Textarea
+                            ref={textareaRef}
                             value={postForm.data.text}
                             onChange={(e) => postForm.setData('text', e.target.value)}
-                            placeholder="Write a post to the channel..."
-                            className="flex-1"
+                            onKeyDown={handleKeyDown}
+                            placeholder="Write a post to the channel... (Ctrl+Enter to send)"
+                            className="min-h-[100px] resize-y"
                             autoComplete="off"
                         />
-                        <Button type="submit" disabled={postForm.processing || !postForm.data.text.trim()}>
-                            <Send className="h-4 w-4 mr-1" />
-                            Post
-                        </Button>
+
+                        {postForm.errors.text && (
+                            <p className="text-destructive text-sm">{postForm.errors.text}</p>
+                        )}
+
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs text-muted-foreground">
+                                {postForm.data.text.length}/4096 · HTML formatting supported · Ctrl+Enter to send
+                            </span>
+                            <Button type="submit" disabled={postForm.processing || !postForm.data.text.trim()}>
+                                <Send className="h-4 w-4 mr-1" />
+                                Post
+                            </Button>
+                        </div>
                     </form>
                 )}
 
                 {/* Message feed */}
-                <div className="rounded-lg border flex-1">
+                <div className="rounded-lg border flex-1 overflow-y-auto max-h-[500px]">
                     {msgList.length === 0 ? (
                         <div className="text-muted-foreground flex flex-col items-center justify-center py-20">
                             <Radio className="mb-4 h-12 w-12 opacity-20" />
@@ -194,7 +273,7 @@ export default function ChannelIndex({ bot, messages }: Props) {
                                                 })}
                                             </span>
                                         </div>
-                                        <p className="text-sm">{msg.text}</p>
+                                        <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
                                     </div>
                                 </div>
                             ))}

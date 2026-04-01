@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Seller;
 
 use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
+use App\Models\Bot;
 use App\Models\BotCustomer;
 use App\Models\InstagramMessage;
 use App\Models\Order;
@@ -22,7 +23,15 @@ class DashboardController extends Controller
             return redirect()->route('admin.sellers.index');
         }
 
-        $bot = $request->user()->bot;
+        $botId = session('bot_id');
+        $bot = $botId
+            ? Bot::where('seller_id', $request->user()->id)->find($botId)
+            : Bot::where('seller_id', $request->user()->id)->first();
+
+        if ($bot && ! $botId) {
+            session(['bot_id' => $bot->id]);
+        }
+
         $period = $request->query('period', 'daily');
 
         $instagramAccount = $request->user()->instagramAccount;

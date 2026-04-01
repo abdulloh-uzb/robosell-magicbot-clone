@@ -27,6 +27,7 @@ class ChatController extends Controller
         if ($botId) {
             $telegramConvs = TelegramMessage::query()
                 ->where('bot_id', $botId)
+                ->whereNotNull('customer_id')
                 ->with('customer')
                 ->selectRaw('customer_id, MAX(created_at) as last_message_at')
                 ->groupBy('customer_id')
@@ -47,7 +48,7 @@ class ChatController extends Controller
                     return [
                         'id' => (string) $row->customer_id,
                         'platform' => 'telegram',
-                        'name' => trim($row->customer->first_name . ' ' . $row->customer->last_name),
+                        'name' => trim($row->customer->first_name.' '.$row->customer->last_name),
                         'username' => $row->customer->username,
                         'last_message' => $lastMessage ? [
                             'text' => $lastMessage->text,
@@ -124,7 +125,7 @@ class ChatController extends Controller
                 ->where('customer_id', $id)
                 ->oldest()
                 ->get()
-                ->map(fn($m) => [
+                ->map(fn ($m) => [
                     'id' => $m->id,
                     'direction' => $m->direction,
                     'text' => $m->text,
@@ -145,7 +146,7 @@ class ChatController extends Controller
                 ->where('sender_instagram_id', $id)
                 ->oldest()
                 ->get()
-                ->map(fn($m) => [
+                ->map(fn ($m) => [
                     'id' => $m->id,
                     'direction' => $m->direction,
                     'text' => $m->text,
@@ -163,7 +164,12 @@ class ChatController extends Controller
         $request->validate(['text' => 'required|string|max:4096']);
 
         if ($platform === 'telegram') {
-            $bot = Bot::find(session('bot_id'));
+            $bot = Bot::where('seller_id', $request->user()->id)->find(session('bot_id'));
+
+            if (! $bot) {
+                return response()->json(['status' => 'error', 'message' => 'No active bot selected.'], 422);
+            }
+
             $customer = Customer::findOrFail($id);
 
             $message = TelegramMessage::create([
@@ -193,7 +199,7 @@ class ChatController extends Controller
                     'direction' => 'out',
                     'text' => $message->text,
                     'created_at' => $message->created_at,
-                ]
+                ],
             ]);
         }
 
@@ -229,7 +235,7 @@ class ChatController extends Controller
                     'direction' => 'out',
                     'text' => $message->text,
                     'created_at' => $message->created_at,
-                ]
+                ],
             ]);
         }
 

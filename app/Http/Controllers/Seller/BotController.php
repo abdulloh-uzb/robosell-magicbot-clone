@@ -61,7 +61,9 @@ class BotController extends Controller
         abort_if($bot->seller_id !== auth()->id(), 403);
 
         $request->validate([
-            'channel_id' => 'nullable|string|max:255',
+            'channel_id' => ['nullable', 'string', 'max:255', 'regex:/^(@[a-zA-Z][a-zA-Z0-9_]{3,}|-[0-9]+)$/'],
+        ], [
+            'channel_id.regex' => 'Channel ID must be a negative number (e.g. -1001234567890) or a username starting with @ (e.g. @mychannel).',
         ]);
 
         $bot->update(['channel_id' => $request->channel_id ?: null]);
@@ -70,11 +72,31 @@ class BotController extends Controller
     }
 
     /**
+     * Re-register the webhook for the bot.
+     */
+    public function resetWebhook(Bot $bot): \Illuminate\Http\RedirectResponse
+    {
+        abort_if($bot->seller_id !== auth()->id(), 403);
+
+        $webhookUrl = config('app.url').'/webhook/'.$bot->id;
+        $response = Http::post("https://api.telegram.org/bot{$bot->token}/setWebhook", [
+            'url' => $webhookUrl,
+        ]);
+
+        if (! $response->successful() || ! $response->json('ok')) {
+            return back()->withErrors(['webhook' => 'Failed to reset webhook.']);
+        }
+
+        return back()->with('success', 'Webhook reset successfully.');
+    }
+
+    /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Bot $bot)
+    public function destroy(Bot $bot): \Illuminate\Http\RedirectResponse
     {
-        // Unset webhook before deleting
+        abort_if($bot->seller_id !== auth()->id(), 403);
+
         Http::post("https://api.telegram.org/bot{$bot->token}/deleteWebhook");
         $bot->delete();
 
