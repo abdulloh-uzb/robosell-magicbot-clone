@@ -69,9 +69,11 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                         <span className="text-blue-600">do'konga aylantiring</span>
                     </h1>
 
-                    <p className="text-xl text-gray-500 dark:text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">
-                        MagicBot yordamida Telegram va Instagram orqali onlayn do'kon oching. Mahsulotlarni boshqaring, buyurtmalarni kuzating va mijozlar bilan muloqot qiling — hammasi bitta platformada.
-                    </p>
+                    <div className="mx-auto mb-10 max-w-2xl">
+                        <p className="text-center text-xl leading-relaxed text-gray-500 dark:text-gray-400">
+                            MagicBot yordamida Telegram va Instagram orqali onlayn do'kon oching. Mahsulotlarni boshqaring, buyurtmalarni kuzating va mijozlar bilan muloqot qiling — hammasi bitta platformada.
+                        </p>
+                    </div>
 
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                         {canRegister && (
@@ -112,9 +114,11 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                 <section className="max-w-6xl mx-auto px-6 py-24">
                     <div className="text-center mb-16">
                         <h2 className="text-3xl lg:text-4xl font-bold mb-4">Savdoni osonlashtiruvchi imkoniyatlar</h2>
-                        <p className="text-gray-500 dark:text-gray-400 text-lg max-w-xl mx-auto">
-                            Biznes uchun zarur bo'lgan barcha vositalar bitta joyda.
-                        </p>
+                        <div className="mx-auto max-w-xl">
+                            <p className="text-center text-lg text-gray-500 dark:text-gray-400">
+                                Biznes uchun zarur bo'lgan barcha vositalar bitta joyda.
+                            </p>
+                        </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -235,9 +239,11 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                         <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">
                             Bugun savdoni boshlang
                         </h2>
-                        <p className="text-blue-100 text-lg mb-8 max-w-md mx-auto">
-                            Minglab sotuvchilar allaqachon MagicBot orqali savdo qilmoqda. Siz ham qo'shiling.
-                        </p>
+                        <div className="mx-auto mb-8 max-w-md">
+                            <p className="text-center text-lg text-blue-100">
+                                Minglab sotuvchilar allaqachon MagicBot orqali savdo qilmoqda. Siz ham qo'shiling.
+                            </p>
+                        </div>
                         {canRegister && (
                             <Link
                                 href={register()}
