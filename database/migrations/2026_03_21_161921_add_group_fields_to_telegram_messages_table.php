@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('sender_telegram_id')->nullable()->after('group_chat_id');
             $table->string('sender_name')->nullable()->after('sender_telegram_id');
             // make customer_id nullable for group messages
-            $table->integer('customer_id')->nullable()->change();
+            $table->unsignedBigInteger('customer_id')->nullable()->change();
         });
     }
 
@@ -24,7 +24,7 @@ return new class extends Migration
     {
         Schema::table('telegram_messages', function (Blueprint $table) {
             $table->dropColumn(['group_chat_id', 'sender_telegram_id', 'sender_name']);
-            $table->integer('customer_id')->nullable(false)->change();
+            $table->unsignedBigInteger('customer_id')->nullable(false)->change();
         });
     }
 };
