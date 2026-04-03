@@ -140,9 +140,9 @@ export default function OrdersIndex({
 
     const customerName = (order: Order) =>
         order.customer_name ??
-        `${order.customer?.first_name ?? ''} ${order.customer?.last_name ?? ''}`.trim() ||
-        order.customer?.username ||
-        '—';
+        (`${order.customer?.first_name ?? ''} ${order.customer?.last_name ?? ''}`.trim() ||
+            order.customer?.username ||
+            '—');
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
