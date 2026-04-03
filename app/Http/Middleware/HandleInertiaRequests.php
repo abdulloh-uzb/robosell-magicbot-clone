@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Bot;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -48,6 +49,10 @@ class HandleInertiaRequests extends Middleware
             ],
             'locale' => app()->getLocale(),
             'translations' => $this->loadTranslations(),
+            'bots' => $request->user()?->hasRole('seller')
+                ? Bot::where('seller_id', $request->user()->id)->get(['id', 'name', 'username'])
+                : [],
+            'active_bot_id' => session('bot_id'),
         ];
     }
 

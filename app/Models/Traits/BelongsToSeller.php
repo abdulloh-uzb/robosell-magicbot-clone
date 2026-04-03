@@ -9,8 +9,12 @@ trait BelongsToSeller
     public static function bootBelongsToSeller()
     {
         static::creating(function ($model) {
-            $model->seller_id = auth()->id();
-            $model->bot_id = session('bot_id');
+            if (! $model->seller_id) {
+                $model->seller_id = auth()->id();
+            }
+            if (! $model->bot_id) {
+                $model->bot_id = session('bot_id');
+            }
         });
 
         static::addGlobalScope('seller', function (Builder $builder) {

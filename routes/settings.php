@@ -33,6 +33,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::resource('settings/bots', BotController::class)->except(['show', 'edit', 'create']);
     Route::patch('settings/bots/{bot}/channel', [BotController::class, 'update'])->name('bots.channel.update');
+    Route::post('settings/bots/{bot}/reset-webhook', [BotController::class, 'resetWebhook'])->name('bots.reset-webhook');
 
     Route::get('settings/instagram', [InstagramController::class, 'show'])->name('instagram.show');
     Route::get('settings/instagram/connect', [InstagramController::class, 'connect'])->name('instagram.connect');
