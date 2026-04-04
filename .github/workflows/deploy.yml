@@ -17,11 +17,22 @@ jobs:
           php-version: '8.4'
           extensions: mbstring, pdo, pdo_mysql, xml, curl, zip
 
+      - name: Node.js o'rnatish
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
       - name: .env tayyorlash
         run: cp .env.example .env
 
       - name: Composer install
         run: composer install --optimize-autoloader
+
+      - name: NPM install va build
+        run: |
+          npm ci
+          npm run build
 
       - name: App key yaratish
         run: php artisan key:generate
@@ -46,6 +57,8 @@ jobs:
             cd /var/www/robosell-magicbot-clone
             git pull origin main
             composer install --no-dev --optimize-autoloader
+            npm ci
+            npm run build
             php artisan migrate --force
             php artisan config:cache
             php artisan route:cache
