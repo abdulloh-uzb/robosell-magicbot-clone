@@ -17,6 +17,15 @@ class ProfileUpdateRequest extends FormRequest
      */
     public function rules(): array
     {
-        return $this->profileRules($this->user()->id);
+        $rules = $this->profileRules($this->user()->id);
+
+        if ($this->user()->hasRole('seller')) {
+            $rules['ai_auto_reply_enabled'] = ['required', 'boolean'];
+            $rules['notification_email'] = ['nullable', 'email', 'max:255'];
+            $rules['notification_telegram_chat_id'] = ['nullable', 'string', 'max:64'];
+            $rules['delivery_info'] = ['nullable', 'string', 'max:2000'];
+        }
+
+        return $rules;
     }
 }

@@ -26,6 +26,10 @@ class User extends Authenticatable
         'password',
         'phone',
         'is_blocked',
+        'ai_auto_reply_enabled',
+        'notification_email',
+        'notification_telegram_chat_id',
+        'delivery_info',
     ];
 
     /**
@@ -52,6 +56,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
             'is_blocked' => 'boolean',
+            'ai_auto_reply_enabled' => 'boolean',
         ];
     }
 
