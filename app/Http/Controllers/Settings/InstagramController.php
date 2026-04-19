@@ -123,7 +123,7 @@ class InstagramController extends Controller
             ['seller_id' => $request->user()->id],
             [
                 'instagram_user_id' => $instagramUserId,
-                'igsid' => $igsid,
+                'igsid' => $igsid ?? $instagramUserId,
                 'username' => $username,
                 'access_token' => $accessToken,
                 'token_expires_at' => $expiresIn ? now()->addSeconds($expiresIn) : null,

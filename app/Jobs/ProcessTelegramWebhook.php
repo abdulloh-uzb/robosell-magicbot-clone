@@ -137,6 +137,11 @@ class ProcessTelegramWebhook implements ShouldQueue
                 'direction' => 'in',
                 'created_at' => $saved->created_at->toISOString(),
             ]);
+
+            ProcessAiChatAutoReply::dispatch(
+                platform: 'telegram',
+                telegramMessageId: $saved->id,
+            );
         });
     }
 }

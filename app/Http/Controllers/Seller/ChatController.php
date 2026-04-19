@@ -7,15 +7,17 @@ use App\Models\Bot;
 use App\Models\Customer;
 use App\Models\InstagramMessage;
 use App\Models\TelegramMessage;
+use App\Services\SellerChatMessageSender;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
 use Inertia\Inertia;
 use Inertia\Response;
-use SergiX44\Nutgram\Nutgram;
-use Throwable;
 
 class ChatController extends Controller
 {
+    public function __construct(
+        protected SellerChatMessageSender $chatMessageSender
+    ) {}
+
     public function index(Request $request): Response
     {
         $botId = session('bot_id');
@@ -172,25 +174,7 @@ class ChatController extends Controller
 
             $customer = Customer::findOrFail($id);
 
-            $message = TelegramMessage::create([
-                'bot_id' => $bot->id,
-                'customer_id' => $customer->id,
-                'direction' => 'out',
-                'text' => $request->text,
-            ]);
-
-            try {
-                $nutgram = new Nutgram($bot->token);
-                $sent = $nutgram->sendMessage(
-                    $request->text,
-                    ['chat_id' => $customer->telegram_id]
-                );
-                if ($sent) {
-                    $message->update(['telegram_message_id' => $sent->message_id]);
-                }
-            } catch (Throwable $e) {
-                report($e);
-            }
+            $message = $this->chatMessageSender->sendTelegram($bot, $customer, $request->text);
 
             return response()->json([
                 'status' => 'success',
@@ -206,27 +190,12 @@ class ChatController extends Controller
         if ($platform === 'instagram') {
             $account = $request->user()->instagramAccount()->firstOrFail();
 
-            $message = InstagramMessage::create([
-                'seller_id' => $request->user()->id,
-                'instagram_account_id' => $account->id,
-                'sender_instagram_id' => $id,
-                'direction' => 'out',
-                'text' => $request->text,
-            ]);
-
-            try {
-                $response = Http::post("https://graph.instagram.com/v22.0/{$account->instagram_user_id}/messages", [
-                    'recipient' => ['id' => $id],
-                    'message' => ['text' => $request->text],
-                    'access_token' => $account->access_token,
-                ]);
-
-                if ($response->successful()) {
-                    $message->update(['instagram_message_id' => $response->json('message_id')]);
-                }
-            } catch (\Throwable $e) {
-                report($e);
-            }
+            $message = $this->chatMessageSender->sendInstagram(
+                $request->user(),
+                $account,
+                $id,
+                $request->text
+            );
 
             return response()->json([
                 'status' => 'success',

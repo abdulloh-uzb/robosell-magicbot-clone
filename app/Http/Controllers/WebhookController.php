@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Events\InstagramMessageReceived;
+use App\Jobs\ProcessAiChatAutoReply;
 use App\Jobs\ProcessTelegramWebhook;
 use App\Models\Bot;
 use App\Models\InstagramAccount;
@@ -70,6 +71,10 @@ class WebhookController extends Controller
             }
 
             if (! $account) {
+                \Log::warning('Instagram webhook: no linked InstagramAccount for entry id', [
+                    'entry_id' => $instagramUserId,
+                ]);
+
                 continue;
             }
 
@@ -103,6 +108,16 @@ class WebhookController extends Controller
                 ];
 
                 InstagramMessageReceived::dispatch($account->seller_id, $messageData);
+
+                ProcessAiChatAutoReply::dispatch(
+                    platform: 'instagram',
+                    instagramMessageId: $message->id,
+                );
+
+                \Log::info('Instagram webhook: AI auto-reply job dispatched', [
+                    'instagram_message_id' => $message->id,
+                    'seller_id' => $account->seller_id,
+                ]);
             }
         }
 
