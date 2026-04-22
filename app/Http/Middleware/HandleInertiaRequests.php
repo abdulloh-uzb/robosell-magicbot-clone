@@ -42,6 +42,8 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
                 'is_super_admin' => $request->user() ? $request->user()->hasRole('super_admin') : false,
+                'is_seller' => $request->user() ? $request->user()->hasRole('seller') : false,
+                'ai_configured' => filled(config('ai.providers.'.config('ai.default', 'openai').'.key')),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'flash' => [

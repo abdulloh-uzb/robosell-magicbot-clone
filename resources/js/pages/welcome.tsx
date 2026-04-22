@@ -13,7 +13,7 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
     const faq = [
         {
             q: 'Нужны ли технические знания?',
-            a: 'Нет. Если умеешь пользоваться Telegram — умеешь пользоваться ESAVDO.',
+            a: 'Нет. Если умеешь пользоваться Telegram — умеешь пользоваться HeyBazaar.',
         },
         {
             q: 'Как работают защищённые платежи?',
@@ -27,14 +27,14 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
 
     return (
         <>
-            <Head title="ESAVDO — Платформа для малого бизнеса" />
+            <Head title="HeyBazaar — Платформа для малого бизнеса" />
             <style>{`html { scroll-behavior: smooth; }`}</style>
 
             <div className="min-h-screen bg-[#F7F5F2] text-[#1A1714]">
                 <header className="sticky top-0 z-50 border-b border-black/10 bg-[#F7F5F2]/90 backdrop-blur">
                     <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-6 lg:px-10">
                         <a href="#" className="font-serif text-2xl font-black tracking-tight">
-                            ESA<span className="text-[#1D6B4A]">VDO</span>
+                            hey<span className="text-[#1D6B4A]">bazaar</span>
                         </a>
                         <nav className="hidden items-center gap-8 text-sm text-[#5C5650] md:flex">
                             <a href="#pain" className="hover:text-black">Проблемы</a>
@@ -75,7 +75,7 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                             <br />Делай это <span className="italic text-[#1D6B4A]">умно.</span>
                         </h1>
                         <p className="mt-8 max-w-xl text-lg leading-8 text-[#5C5650]">
-                            Твоя касса, Telegram-бот и Instagram-магазин работают отдельно — и ты теряешь деньги каждый день. ESAVDO объединяет всё в одно место.
+                            Твоя касса, Telegram-бот и Instagram-магазин работают отдельно — и ты теряешь деньги каждый день. HeyBazaar объединяет всё в одно место.
                         </p>
                         <div className="mt-8 flex flex-wrap gap-3">
                             {canRegister && (
@@ -141,7 +141,7 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                             <div key={title} className="rounded-2xl border border-black/10 bg-white p-6 shadow-sm">
                                 <div className="text-xs font-semibold uppercase tracking-widest text-[#E8520A]">Проблема {String(i + 1).padStart(2, '0')}</div>
                                 <h3 className="mt-2 font-serif text-2xl font-bold">{title}</h3>
-                                <p className="mt-3 text-sm leading-7 text-[#5C5650]">Esavdo решает это через автоматизацию, единый дашборд, ИИ-ответы и защищённые платежи.</p>
+                                <p className="mt-3 text-sm leading-7 text-[#5C5650]">HeyBazaar решает это через автоматизацию, единый дашборд, ИИ-ответы и защищённые платежи.</p>
                             </div>
                         ))}
                     </div>
@@ -256,13 +256,13 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
 
                 <footer className="grid grid-cols-1 gap-4 border-t border-black/10 bg-white px-6 py-8 text-center lg:grid-cols-3 lg:items-center lg:px-10">
                     <div className="font-serif text-2xl font-black tracking-tight lg:text-left">
-                        ESA<span className="text-[#1D6B4A]">VDO</span>
+                        hey<span className="text-[#1D6B4A]">bazaar</span>
                     </div>
-                    <p className="text-sm text-[#9E9890]">© 2026 Esavdo. Центральная Азия.</p>
+                    <p className="text-sm text-[#9E9890]">© 2026 HeyBazaar. Центральная Азия.</p>
                     <div className="flex justify-center gap-5 text-sm text-[#9E9890] lg:justify-end">
                         <a href="#">Условия</a>
                         <a href="#">Конфиденциальность</a>
-                        <a href="https://t.me/esavdo_uz">Поддержка</a>
+                        <a href="https://t.me/heybazaar">Поддержка</a>
                     </div>
                 </footer>
             </div>
