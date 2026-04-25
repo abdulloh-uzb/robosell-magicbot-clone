@@ -1,271 +1,800 @@
 import { Head, Link, usePage } from '@inertiajs/react';
+import React, { useEffect, useState } from 'react';
 import { dashboard, login, register } from '@/routes';
+import '../../css/heybazaar.css';
 
-type PageProps = {
-    auth: {
-        user?: unknown;
-    };
+/** Defaults aligned with `test/app.jsx` (TWEAK_DEFAULTS). */
+const LANDING_DEFAULTS = {
+    dark: false,
+    accent: '#E07A1F',
+    showAIDemo: true,
+    showPricing: true,
+} as const;
+
+type LandingState = {
+    dark: boolean;
+    accent: string;
+    showAIDemo: boolean;
+    showPricing: boolean;
 };
 
-export default function Welcome({ canRegister = true }: { canRegister?: boolean }) {
-    const { auth } = usePage<PageProps>().props;
+type SharedAuth = { user?: unknown } | undefined;
 
-    const faq = [
-        {
-            q: 'Нужны ли технические знания?',
-            a: 'Нет. Если умеешь пользоваться Telegram — умеешь пользоваться HeyBazaar.',
-        },
-        {
-            q: 'Как работают защищённые платежи?',
-            a: 'Покупатель оплачивает, деньги удерживаются до подтверждения доставки.',
-        },
-        {
-            q: 'У меня уже есть Telegram-бот. Что делать?',
-            a: 'Подключаете существующего бота по токену и продолжаете работу.',
-        },
-    ];
+// components.jsx — heybazaar landing page components
 
-    return (
-        <>
-            <Head title="HeyBazaar — Платформа для малого бизнеса" />
-            <style>{`html { scroll-behavior: smooth; }`}</style>
+const COPY = {
+  uz: {
+    nav: { features: "Imkoniyatlar", how: "Qanday ishlaydi", pricing: "Narxlar", faq: "Savollar" },
+    cta_primary: "Botni sinab ko'rish",
+    cta_secondary: "Demo ko'rish",
+    yc_badge: "Backed by Y Combinator",
+    hero_title_a: "5 daqiqada",
+    hero_title_b: "online do'kon",
+    hero_title_c: "oching.",
+    hero_sub: "Telegram'da do'kon oching, Click, Payme va Uzum bilan to'lov qabul qiling. Instagram va Telegram'dagi mijozlarni bitta inboxda boshqaring — AI esa savollarga o'zi javob beradi.",
+    hero_meta: "Beta: 240+ kichik biznes",
+    logo_strip: "Bilan ishlaymiz",
+    how_eyebrow: "Qanday ishlaydi",
+    how_title: "Uch qadamda do'kon. Hech qanday kod yozmasdan.",
+    how_sub: "Ro'yxatdan o'tasiz, mahsulotlaringizni qo'shasiz va Telegramdagi yangi do'koningiz havolasini ulashasiz. Vassalom.",
+    feat_eyebrow: "Imkoniyatlar",
+    feat_title: "Bitta joyda barchasi: do'kon, mijozlar, to'lovlar.",
+    feat_sub: "Kichik va o'rta biznes egalari uchun yaratilgan. Telegram-native, mahalliy to'lov tizimlariga moslashgan.",
+    ai_eyebrow: "AI yordamchi",
+    ai_title: "AI mijozlarga 24/7 javob beradi — sizning do'koningiz tilida.",
+    ai_sub: "Mahsulotlar, narxlar, yetkazib berish, ish vaqti — barcha ma'lumotlar AI'ga avtomatik ulanadi. Siz uxlayotganingizda ham sotuv davom etadi.",
+    pricing_eyebrow: "Narxlar",
+    pricing_title: "Erkin boshlang. Biznes o'sgani sayin to'lang.",
+    pricing_sub: "Komissiya yo'q. Faqat oddiy oylik obuna.",
+    faq_eyebrow: "Savol-javob",
+    faq_title: "Tez-tez beriladigan savollar.",
+    cta_h_a: "Ertaga emas,",
+    cta_h_b: "bugun soting.",
+    cta_sub: "Bir necha daqiqada do'koningizni oching va birinchi mijozingizni bugun qabul qiling.",
+  }
+};
 
-            <div className="min-h-screen bg-[#F7F5F2] text-[#1A1714]">
-                <header className="sticky top-0 z-50 border-b border-black/10 bg-[#F7F5F2]/90 backdrop-blur">
-                    <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-6 lg:px-10">
-                        <a href="#" className="font-serif text-2xl font-black tracking-tight">
-                            hey<span className="text-[#1D6B4A]">bazaar</span>
-                        </a>
-                        <nav className="hidden items-center gap-8 text-sm text-[#5C5650] md:flex">
-                            <a href="#pain" className="hover:text-black">Проблемы</a>
-                            <a href="#features" className="hover:text-black">Возможности</a>
-                            <a href="#pricing" className="hover:text-black">Цены</a>
-                            <a href="#faq" className="hover:text-black">FAQ</a>
-                        </nav>
-                        <div className="flex items-center gap-3">
-                            {auth.user ? (
-                                <Link href={dashboard()} className="rounded-lg bg-[#1A1714] px-4 py-2 text-sm font-medium text-white">
-                                    Dashboard
-                                </Link>
-                            ) : (
-                                <>
-                                    <Link href={login()} className="px-2 py-2 text-sm text-[#5C5650] hover:text-black">
-                                        Kirish
-                                    </Link>
-                                    {canRegister && (
-                                        <Link href={register()} className="rounded-lg bg-[#1A1714] px-4 py-2 text-sm font-medium text-white">
-                                            Boshlash
-                                        </Link>
-                                    )}
-                                </>
-                            )}
-                        </div>
-                    </div>
-                </header>
+// ─────────────────────────────────────────────────────────────────────────────
+// Nav
+function Nav({
+    lang,
+    setLang,
+    auth,
+    canRegister,
+    dark,
+    onToggleDark,
+    showPricing,
+}: {
+    lang: string;
+    setLang: (code: string) => void;
+    auth: SharedAuth;
+    canRegister: boolean;
+    dark: boolean;
+    onToggleDark: () => void;
+    showPricing: boolean;
+}) {
+  return (
+    <nav className="nav">
+      <div className="wrap nav-inner">
+        <div className="logo">
+          heybazaar
+        </div>
+        <div className="nav-links" style={{display:'flex'}}>
+          <a href="#features">{COPY.uz.nav.features}</a>
+          <a href="#how">{COPY.uz.nav.how}</a>
+          {showPricing && <a href="#pricing">{COPY.uz.nav.pricing}</a>}
+          <a href="#faq">{COPY.uz.nav.faq}</a>
+        </div>
+        
+        <div className="nav-right">
+          <button
+            type="button"
+            className="btn btn-ghost"
+            style={{ padding: '6px 10px', fontSize: 13 }}
+            onClick={onToggleDark}
+            aria-label={dark ? "Yorug' rejim" : "Qorong'i rejim"}
+            title={dark ? "Yorug' rejim" : "Qorong'i rejim"}
+          >
+            {dark ? '☀' : '☾'}
+          </button>
+          <div className="lang-toggle" role="tablist" aria-label="Language">
+            <button className={lang==='uz'?'on':''} onClick={() => setLang('uz')}>UZ</button>
+            <button className={lang==='en'?'on':''} onClick={() => setLang('en')}>EN</button>
+          </div>
+          {auth?.user ? (
+             <Link href={dashboard()} className="btn btn-primary" style={{padding:'8px 14px'}}>Dashboard</Link>
+          ) : (
+             <>
+               <Link href={login()} className="btn btn-ghost" style={{padding:'8px 14px'}}>Kirish</Link>
+               {canRegister && (
+                 <Link href={register()} className="btn btn-primary" style={{padding:'8px 14px'}}>
+                   {COPY.uz.cta_primary} <span>→</span>
+                 </Link>
+               )}
+             </>
+          )}
+        </div>
 
-                <section className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-10 px-6 pb-16 pt-16 lg:grid-cols-2 lg:items-center lg:gap-16 lg:px-10 lg:pt-24">
-                    <div>
-                        <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-[#E8F3EE] px-4 py-2 text-xs font-semibold uppercase tracking-wider text-[#1D6B4A]">
-                            <span className="h-2 w-2 rounded-full bg-[#1D6B4A]" />
-                            Платформа для малого бизнеса
-                        </div>
-                        <h1 className="font-serif text-5xl font-black leading-[0.95] tracking-tight sm:text-6xl lg:text-7xl">
-                            Хватит вести бизнес
-                            <br />в <span className="text-[#9E9890] line-through">хаосе</span>.
-                            <br />Делай это <span className="italic text-[#1D6B4A]">умно.</span>
-                        </h1>
-                        <p className="mt-8 max-w-xl text-lg leading-8 text-[#5C5650]">
-                            Твоя касса, Telegram-бот и Instagram-магазин работают отдельно — и ты теряешь деньги каждый день. HeyBazaar объединяет всё в одно место.
-                        </p>
-                        <div className="mt-8 flex flex-wrap gap-3">
-                            {canRegister && (
-                                <Link href={register()} className="rounded-xl bg-[#1D6B4A] px-7 py-3.5 text-sm font-semibold text-white shadow">
-                                    Начать бесплатно →
-                                </Link>
-                            )}
-                            <a href="#pain" className="rounded-xl border border-black/15 px-6 py-3.5 text-sm text-[#5C5650]">
-                                Узнать больше ↓
-                            </a>
-                        </div>
-                    </div>
+      </div>
+    </nav>
+  );
+}
 
-                    <div className="rounded-3xl border border-black/10 bg-white p-5 shadow-xl">
-                        <div className="mb-4 grid grid-cols-3 gap-3">
-                            {[{ n: '18', l: 'Заказов' }, { n: '3', l: 'Ожидают' }, { n: '2.1M', l: 'Сум сегодня' }].map((item) => (
-                                <div key={item.l} className="rounded-xl border border-black/10 bg-[#F7F5F2] p-3">
-                                    <div className="font-serif text-2xl font-bold">{item.n}</div>
-                                    <div className="mt-1 text-[11px] uppercase tracking-wide text-[#9E9890]">{item.l}</div>
-                                </div>
-                            ))}
-                        </div>
-                        <div className="space-y-2">
-                            {[
-                                '🤖 ИИ ответил автоматически на вопрос клиента',
-                                '✈ Telegram: Заказ #247 оплачен через Click',
-                                '♥ Instagram: Есть это в красном цвете?',
-                            ].map((msg) => (
-                                <div key={msg} className="rounded-xl border border-black/10 bg-[#F7F5F2] px-3 py-2 text-sm text-[#5C5650]">
-                                    {msg}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </section>
+// ─────────────────────────────────────────────────────────────────────────────
+// Hero
+function Hero({ auth, canRegister }: { auth: SharedAuth; canRegister: boolean }) {
+  return (
+    <section className="hero">
+      <div className="wrap hero-grid">
+        <div>
+          <span className="yc-badge">
+            <span className="dot">Y</span>
+            {COPY.uz.yc_badge}
+          </span>
+          <h1 className="display hero-title">
+            {COPY.uz.hero_title_a}<br/>
+            <span className="underline-accent">{COPY.uz.hero_title_b}</span><br/>
+            {COPY.uz.hero_title_c}
+          </h1>
+          <p className="hero-sub">{COPY.uz.hero_sub}</p>
+          
+          <div className="hero-ctas">
+            {auth?.user ? (
+               <Link href={dashboard()} className="btn btn-primary">Dashboard <span>→</span></Link>
+            ) : (
+               <>
+                 {canRegister && (
+                   <Link href={register()} className="btn btn-primary">{COPY.uz.cta_primary} <span>→</span></Link>
+                 )}
+                 <button className="btn btn-ghost">{COPY.uz.cta_secondary}</button>
+               </>
+            )}
+          </div>
 
-                <section className="bg-[#1A1714] py-10 text-white">
-                    <div className="mx-auto grid w-full max-w-6xl grid-cols-2 gap-8 px-6 text-center lg:grid-cols-4">
-                        {[
-                            ['500+', 'Продавцов в листе ожидания'],
-                            ['3 мин', 'До первого заказа'],
-                            ['14 дн', 'Бесплатный период'],
-                            ['24/7', 'ИИ работает вместо вас'],
-                        ].map(([value, label]) => (
-                            <div key={label}>
-                                <div className="font-serif text-4xl font-black">{value}</div>
-                                <div className="mt-2 text-xs text-white/60">{label}</div>
-                            </div>
-                        ))}
-                    </div>
-                </section>
-
-                <section id="pain" className="scroll-mt-24 mx-auto w-full max-w-7xl px-6 py-20 lg:px-10">
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#1D6B4A]">Твоя реальность сейчас</p>
-                    <h2 className="mt-3 font-serif text-4xl font-bold leading-tight sm:text-5xl">Ты узнаёшь себя в этих историях?</h2>
-                    <div className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-2">
-                        {[
-                            'Клиент перевёл деньги — и исчез',
-                            'Сообщения везде — заказы теряются',
-                            'Реклама в минус — аудитория не та',
-                            'Отвечаешь на одно и то же весь день',
-                        ].map((title, i) => (
-                            <div key={title} className="rounded-2xl border border-black/10 bg-white p-6 shadow-sm">
-                                <div className="text-xs font-semibold uppercase tracking-widest text-[#E8520A]">Проблема {String(i + 1).padStart(2, '0')}</div>
-                                <h3 className="mt-2 font-serif text-2xl font-bold">{title}</h3>
-                                <p className="mt-3 text-sm leading-7 text-[#5C5650]">HeyBazaar решает это через автоматизацию, единый дашборд, ИИ-ответы и защищённые платежи.</p>
-                            </div>
-                        ))}
-                    </div>
-                </section>
-
-                <section id="features" className="scroll-mt-24 border-y border-black/10 bg-white py-20">
-                    <div className="mx-auto w-full max-w-7xl px-6 lg:px-10">
-                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#1D6B4A]">Что входит в платформу</p>
-                        <h2 className="mt-3 font-serif text-4xl font-bold sm:text-5xl">14 инструментов. Одна подписка.</h2>
-                        <div className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                            {[
-                                ['🎯', 'Подбор рекламных каналов'],
-                                ['🔐', 'Защищённые платежи'],
-                                ['🤖', 'Авто-ответы на DM'],
-                                ['📊', 'Единый дашборд'],
-                                ['💳', 'Все местные методы оплаты'],
-                                ['🚚', 'Доставка и трекинг'],
-                            ].map(([icon, title], idx) => (
-                                <div key={title} className={idx === 0 ? 'rounded-2xl bg-[#1D6B4A] p-6 text-white' : 'rounded-2xl border border-black/10 bg-[#F7F5F2] p-6'}>
-                                    <div className="text-3xl">{icon}</div>
-                                    <h3 className="mt-3 font-serif text-2xl font-bold">{title}</h3>
-                                    <p className={idx === 0 ? 'mt-2 text-sm text-white/80' : 'mt-2 text-sm text-[#5C5650]'}>
-                                        Реальные инструменты для ежедневной работы малого бизнеса.
-                                    </p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </section>
-
-                <section className="mx-auto w-full max-w-7xl px-6 py-20 lg:px-10">
-                    <h2 className="font-serif text-4xl font-bold sm:text-5xl">От регистрации до первого заказа — 3 минуты</h2>
-                    <div className="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-2">
-                        <div className="space-y-5">
-                            {['Регистрируешься', 'Подключаешь каналы', 'Добавляешь товары', 'Продаёшь — платформа делает остальное'].map((step, i) => (
-                                <div key={step} className="flex gap-4 rounded-xl border border-black/10 bg-white p-4">
-                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#1D6B4A] font-serif text-lg font-bold text-white">{i + 1}</div>
-                                    <div>
-                                        <h3 className="font-serif text-xl font-bold">{step}</h3>
-                                        <p className="mt-1 text-sm text-[#5C5650]">Простой и быстрый запуск без сложной настройки.</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                        <div className="space-y-3 rounded-2xl border border-black/10 bg-white p-5">
-                            <p className="text-sm font-medium text-[#5C5650]">Умный подбор рекламных каналов</p>
-                            {[
-                                ['@fashion_tashkent', '98%'],
-                                ['@uz_shopping', '74%'],
-                                ['@big_news_uz', '12%'],
-                            ].map(([channel, score]) => (
-                                <div key={channel} className="flex items-center justify-between rounded-xl border border-black/10 bg-[#F7F5F2] px-4 py-3">
-                                    <div className="text-sm font-medium">{channel}</div>
-                                    <div className="font-serif text-xl font-bold text-[#1D6B4A]">{score}</div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </section>
-
-                <section id="pricing" className="scroll-mt-24 border-y border-black/10 bg-[#EFECEA] py-20">
-                    <div className="mx-auto w-full max-w-7xl px-6 lg:px-10">
-                        <p className="text-center text-xs font-semibold uppercase tracking-[0.2em] text-[#1D6B4A]">Тарифы</p>
-                        <h2 className="mt-3 text-center font-serif text-4xl font-bold sm:text-5xl">Честные цены</h2>
-                        <div className="mt-10 grid grid-cols-1 gap-4 lg:grid-cols-3">
-                            {[
-                                { plan: 'Старт', price: '99 000', popular: false },
-                                { plan: 'Про', price: '249 000', popular: true },
-                                { plan: 'Бизнес', price: '499 000', popular: false },
-                            ].map((item) => (
-                                <div key={item.plan} className={item.popular ? 'rounded-2xl bg-[#1D6B4A] p-7 text-white shadow-lg' : 'rounded-2xl border border-black/10 bg-white p-7'}>
-                                    <div className="text-xs uppercase tracking-[0.2em] opacity-70">{item.plan}</div>
-                                    <div className="mt-4 font-serif text-5xl font-black leading-none">{item.price}</div>
-                                    <div className="mt-1 text-sm opacity-70">сум / месяц</div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </section>
-
-                <section id="faq" className="scroll-mt-24 mx-auto w-full max-w-7xl px-6 py-20 lg:px-10">
-                    <h2 className="font-serif text-4xl font-bold sm:text-5xl">Частые вопросы</h2>
-                    <div className="mt-8 space-y-3">
-                        {faq.map((item) => (
-                            <div key={item.q} className="rounded-xl border border-black/10 bg-white p-5">
-                                <h3 className="text-base font-semibold">{item.q}</h3>
-                                <p className="mt-2 text-sm leading-7 text-[#5C5650]">{item.a}</p>
-                            </div>
-                        ))}
-                    </div>
-                </section>
-
-                <section className="bg-[#1A1714] py-24 text-center text-white">
-                    <div className="mx-auto max-w-4xl px-6">
-                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#6EDFA8]">Начни сегодня</p>
-                        <h2 className="mt-4 font-serif text-5xl font-black leading-tight sm:text-6xl">
-                            Твой бизнес заслуживает <span className="italic text-[#6EDFA8]">нормального инструмента.</span>
-                        </h2>
-                        <p className="mt-5 text-white/60">Присоединяйся к 500+ продавцам в листе ожидания. 14 дней бесплатно.</p>
-                        <div className="mt-8 flex flex-wrap justify-center gap-3">
-                            {canRegister && (
-                                <Link href={register()} className="rounded-xl bg-white px-7 py-3.5 text-sm font-semibold text-[#1A1714]">
-                                    Начать бесплатно →
-                                </Link>
-                            )}
-                            <a href="https://t.me/abdulloh_usmonovvv" className="rounded-xl border border-white/20 px-6 py-3.5 text-sm text-white/80">
-                                Написать в Telegram
-                            </a>
-                        </div>
-                    </div>
-                </section>
-
-                <footer className="grid grid-cols-1 gap-4 border-t border-black/10 bg-white px-6 py-8 text-center lg:grid-cols-3 lg:items-center lg:px-10">
-                    <div className="font-serif text-2xl font-black tracking-tight lg:text-left">
-                        hey<span className="text-[#1D6B4A]">bazaar</span>
-                    </div>
-                    <p className="text-sm text-[#9E9890]">© 2026 HeyBazaar. Центральная Азия.</p>
-                    <div className="flex justify-center gap-5 text-sm text-[#9E9890] lg:justify-end">
-                        <a href="#">Условия</a>
-                        <a href="#">Конфиденциальность</a>
-                        <a href="https://t.me/heybazaar">Поддержка</a>
-                    </div>
-                </footer>
+          <div className="hero-meta">
+            <div style={{display:'flex',gap:-4}}>
+              {['#E89C5A','#7A8B6A','#A07050','#5A7A8B'].map((c,i)=>(
+                <div key={i} style={{width:24,height:24,borderRadius:'50%',background:c,
+                  border:'2px solid var(--bg)',marginLeft:i?-8:0}}/>
+              ))}
             </div>
-        </>
-    );
+            <span className="stars">★★★★★</span>
+            <span>{COPY.uz.hero_meta}</span>
+          </div>
+        </div>
+
+        <div className="tg-frame">
+          <TelegramMock />
+          <FloatLead />
+          <FloatPay />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function TelegramMock() {
+  return (
+    <div className="phone">
+      <div className="phone-status">
+        <span>9:41</span>
+        <span style={{display:'flex',gap:5,alignItems:'center',fontSize:11}}>
+          <span>●●●●</span>
+          <span style={{display:'inline-block',width:14,height:9,border:'1.5px solid currentColor',borderRadius:2,position:'relative'}}>
+            <span style={{position:'absolute',inset:1,background:'currentColor',width:'70%',borderRadius:1}}/>
+          </span>
+        </span>
+      </div>
+      <div className="tg-header">
+        <span className="tg-back">‹</span>
+        <div className="tg-avatar">SH</div>
+        <div style={{flex:1}}>
+          <div className="tg-name">Shahnoza Cosmetics</div>
+          <div className="tg-presence">online</div>
+        </div>
+        <span style={{color:'#2AABEE',fontSize:18}}>⋮</span>
+      </div>
+      <div className="tg-body">
+        <div className="bubble in">
+          Salom! Liptintingiz qancha turadi?
+          <span className="time">14:32</span>
+        </div>
+        <div className="bubble out">
+          <div className="ai-tag">
+            <span className="pulse"/>AI · Shahnoza Cosmetics
+          </div>
+          Liptint №07 — <b>89 000 so'm</b>. Toshkent bo'yicha bepul yetkazib beramiz 🚚
+          <span className="time">14:32</span>
+        </div>
+        <div className="bubble out" style={{padding:6,background:'transparent',boxShadow:'none'}}>
+          <div className="product-card">
+            <div className="pic"/>
+            <div style={{flex:1}}>
+              <div className="pi">№07 Velvet Liptint</div>
+              <div className="pn">Maroon Rose</div>
+              <div className="price">89 000 so'm · ✓ Mavjud</div>
+            </div>
+          </div>
+        </div>
+        <div className="bubble in">
+          Click orqali to'lasam bo'ladimi?
+          <span className="time">14:33</span>
+        </div>
+        <div className="bubble out" style={{background:'#FFF6E5',color:'#15130E'}}>
+          Albatta — Click, Payme yoki Uzum tanlang 💳
+          <span className="time">14:33</span>
+        </div>
+      </div>
+      <div className="tg-input">
+        <span className="ic">😊</span>
+        <span style={{flex:1}}>Xabar yozing…</span>
+        <span className="ic">📎</span>
+        <span className="ic" style={{color:'#2AABEE'}}>🎤</span>
+      </div>
+    </div>
+  );
+}
+
+function FloatLead() {
+  return (
+    <div className="float-card lead">
+      <div className="ic-tile" style={{background:'#E4405F'}}>IG</div>
+      <div>
+        <div className="lbl">Yangi lead · Instagram</div>
+        <div className="v">Dilnoza · DM kelishuv</div>
+      </div>
+    </div>
+  );
+}
+
+function FloatPay() {
+  return (
+    <div className="float-card pay">
+      <div className="ic-tile" style={{background:'#0098FE'}}>C</div>
+      <div>
+        <div className="lbl">To'lov qabul qilindi</div>
+        <div className="v">+ 247 000 so'm · Click</div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Logo strip
+function LogoStrip() {
+  const items = [
+    { n: 'Click',   c: '#0098FE', g: 'C' },
+    { n: 'Payme',   c: '#1ABBED', g: 'P' },
+    { n: 'Uzum',    c: '#7F4DFF', g: 'U' },
+    { n: 'Telegram',c: '#2AABEE', g: 'T' },
+    { n: 'Instagram', c: '#E4405F', g: 'IG' },
+    { n: 'OpenAI',  c: '#15130E', g: '✦' },
+  ];
+  return (
+    <section className="logo-strip">
+      <div className="wrap logo-strip-inner">
+        <span className="logo-strip-label">Integratsiyalar</span>
+        <div className="logos">
+          {items.map(it => (
+            <span className="logo-pill" key={it.n}>
+              <span className="sw" style={{background:it.c}}>{it.g}</span>
+              {it.n}
+            </span>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// How it works
+function HowItWorks() {
+  const steps = [
+    {
+      n: '01',
+      h: "Botda ro'yxatdan o'ting",
+      p: "@heybazaar_bot ni oching va biznesingiz nomini, kategoriyasini kiriting. 2 daqiqa.",
+      art: <StepArtSignup/>
+    },
+    {
+      n: '02',
+      h: "Mahsulot va to'lovni qo'shing",
+      p: "Mahsulotlar ro'yxatini Excel'dan yuklang. Click, Payme, Uzum'ni bir tugmada ulang.",
+      art: <StepArtCatalog/>
+    },
+    {
+      n: '03',
+      h: "Mijozlarga havolani ulashing",
+      p: "Telegram va Instagram bio'ga heybazaar.app/sizning_dukon havolasini joylashtiring.",
+      art: <StepArtShare/>
+    },
+  ];
+  return (
+    <section className="s" id="how">
+      <div className="wrap">
+        <span className="s-eyebrow">{COPY.uz.how_eyebrow}</span>
+        <h2 className="display s-title">{COPY.uz.how_title}</h2>
+        <p className="s-sub">{COPY.uz.how_sub}</p>
+        <div className="steps">
+          {steps.map(s => (
+            <div className="step" key={s.n}>
+              <div className="step-n">{s.n}</div>
+              <div className="step-h">{s.h}</div>
+              <p className="step-p">{s.p}</p>
+              <div className="step-art">{s.art}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function StepArtSignup() {
+  return (
+    <div style={{position:'absolute',inset:14,display:'flex',flexDirection:'column',gap:6,fontSize:11,fontFamily:'JetBrains Mono'}}>
+      <div style={{padding:'6px 10px',background:'var(--card)',border:'1px solid var(--line)',borderRadius:6,color:'var(--ink-3)'}}>
+        <span style={{color:'var(--accent)'}}>›</span> Biznes nomi
+      </div>
+      <div style={{padding:'6px 10px',background:'var(--card)',border:'1px solid var(--line)',borderRadius:6,color:'var(--ink)'}}>
+        Shahnoza Cosmetics<span style={{borderLeft:'1px solid var(--ink)',marginLeft:2,animation:'blink 1s infinite'}}/>
+      </div>
+      <div style={{padding:'6px 10px',background:'var(--accent)',color:'var(--accent-ink)',borderRadius:6,textAlign:'center',fontWeight:600,marginTop:'auto'}}>
+        Tasdiqlash →
+      </div>
+    </div>
+  );
+}
+
+function StepArtCatalog() {
+  const rows = [
+    {n:'Liptint №07', p:'89 000', c:'#E89C5A'},
+    {n:'Maska', p:'140 000', c:'#7A8B6A'},
+    {n:'Sham 200ml', p:'220 000', c:'#A07050'},
+  ];
+  return (
+    <div style={{position:'absolute',inset:14,display:'flex',flexDirection:'column',gap:5,fontSize:11}}>
+      {rows.map((r,i)=>(
+        <div key={i} style={{display:'flex',alignItems:'center',gap:8,padding:'5px 8px',
+          background:'var(--card)',border:'1px solid var(--line)',borderRadius:6}}>
+          <span style={{width:14,height:14,borderRadius:3,background:r.c}}/>
+          <span style={{flex:1,color:'var(--ink)',fontWeight:500}}>{r.n}</span>
+          <span style={{color:'var(--ink-3)',fontFamily:'JetBrains Mono',fontSize:10}}>{r.p}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function StepArtShare() {
+  return (
+    <div style={{position:'absolute',inset:14,display:'flex',flexDirection:'column',justifyContent:'space-between',fontSize:11}}>
+      <div style={{padding:'8px 10px',background:'var(--card)',border:'1px solid var(--line)',borderRadius:6,
+        fontFamily:'JetBrains Mono',color:'var(--ink-2)',display:'flex',alignItems:'center',gap:6}}>
+        <span style={{color:'var(--ink-3)'}}>https://</span>heybazaar.app/<span style={{color:'var(--accent)'}}>shahnoza</span>
+      </div>
+      <div style={{display:'flex',gap:6}}>
+        <div style={{flex:1,padding:'6px 8px',background:'#2AABEE',color:'#fff',borderRadius:6,fontSize:10,fontWeight:600,textAlign:'center'}}>
+          ↗ Telegram
+        </div>
+        <div style={{flex:1,padding:'6px 8px',background:'#E4405F',color:'#fff',borderRadius:6,fontSize:10,fontWeight:600,textAlign:'center'}}>
+          ↗ Instagram bio
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Features
+function Features() {
+  return (
+    <section className="s" id="features">
+      <div className="wrap">
+        <span className="s-eyebrow">{COPY.uz.feat_eyebrow}</span>
+        <h2 className="display s-title">{COPY.uz.feat_title}</h2>
+        <p className="s-sub">{COPY.uz.feat_sub}</p>
+
+        <div className="features">
+          <div className="f-card">
+            <span className="f-tag">Yagona inbox</span>
+            <h3 className="f-h">Telegram va Instagram'dagi barcha leadlar — bitta chatda.</h3>
+            <p className="f-p">Mijozlar qayerdan yozsa ham — DM, bot, kommentariya — barchasi bitta qulay interfeysga keladi. Hech bir savol e'tibordan chetda qolmaydi.</p>
+            <div className="f-art">
+              <InboxMock/>
+            </div>
+          </div>
+
+          <div className="f-card">
+            <span className="f-tag">Web App do'kon</span>
+            <h3 className="f-h">Telegram ichida to'liq do'kon. Yuklab olishsiz.</h3>
+            <p className="f-p">Mijozlar Telegram'dan chiqmasdan mahsulot tanlaydi va Click, Payme yoki Uzum bilan to'laydi.</p>
+            <div className="f-art">
+              <StoreMock/>
+            </div>
+          </div>
+        </div>
+
+        <div className="features" style={{marginTop:20,gridTemplateColumns:'1fr 1fr 1fr'}}>
+          <SmallFeature
+            tag="Mahalliy to'lovlar"
+            title="Click, Payme, Uzum bir bosishda"
+            body="Mahalliy to'lov tizimlari bilan tayyor integratsiya. Hisobingizga to'g'ridan-to'g'ri."
+          />
+          <SmallFeature
+            tag="Buyurtma boshqaruvi"
+            title="Holat, yetkazib berish, qabul"
+            body="Har bir buyurtma uchun avtomatik holat — qabul qilindi, jo'natildi, yetkazildi."
+          />
+          <SmallFeature
+            tag="Analitika"
+            title="Sotuv, mijoz, manba"
+            body="Qaysi reklama, qaysi mahsulot, qaysi kun ishlayapti — bir paneldan ko'ring."
+          />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function SmallFeature({ tag, title, body }: { tag: string; title: string; body: string }) {
+  return (
+    <div className="f-card" style={{minHeight:'auto'}}>
+      <span className="f-tag">{tag}</span>
+      <h3 className="f-h" style={{fontSize:20}}>{title}</h3>
+      <p className="f-p" style={{marginBottom:0}}>{body}</p>
+    </div>
+  );
+}
+
+function InboxMock() {
+  const rows = [
+    { src:'TG', c:'#2AABEE', nm:'Dilnoza A.', ms:'Sham 200ml hali bormi?', tm:'14:32', unread:true },
+    { src:'IG', c:'#E4405F', nm:'aliya_uz', ms:'Yetkazib berish narxi qancha?', tm:'14:28', unread:true },
+    { src:'TG', c:'#2AABEE', nm:'Botir M.', ms:'To\'lov qildim, raqam: 4847…', tm:'13:56' },
+    { src:'IG', c:'#E4405F', nm:'nodira.style', ms:'Rahmat, hammasi yetib keldi 🌸', tm:'12:14' },
+    { src:'TG', c:'#2AABEE', nm:'Sevara N.', ms:'Click orqali to\'lasam bo\'ladimi?', tm:'11:40' },
+  ];
+  return (
+    <div className="inbox">
+      {rows.map((r,i)=>(
+        <div key={i} className={'inbox-row'+(r.unread?' unread':'')}>
+          <span className="src" style={{background:r.c}}>{r.src}</span>
+          <div style={{minWidth:0}}>
+            <div className="nm">{r.nm}</div>
+            <div className="ms">{r.ms}</div>
+          </div>
+          <span className="tm">{r.tm}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function StoreMock() {
+  return (
+    <div className="store-mock">
+      <div className="store-head">
+        <div>
+          <div className="store-title">Shahnoza Cosmetics</div>
+          <div className="store-sub">28 mahsulot · ★ 4.9</div>
+        </div>
+        <div style={{width:28,height:28,borderRadius:8,background:'var(--accent-soft)',color:'var(--accent)',display:'grid',placeItems:'center',fontSize:14}}>♡</div>
+      </div>
+      <div className="store-grid">
+        <div className="store-item si-1"><div className="pp">89 000</div>Liptint №07</div>
+        <div className="store-item si-2"><div className="pp">140 000</div>Yashil maska</div>
+        <div className="store-item si-3"><div className="pp">220 000</div>Vanilla sham</div>
+        <div className="store-item si-4"><div className="pp">75 000</div>Tonik</div>
+      </div>
+      <div className="store-pay">
+        <span style={{color:'var(--ink-3)',fontSize:10,fontFamily:'JetBrains Mono',textTransform:'uppercase',letterSpacing:'0.06em'}}>To'lash</span>
+        <div className="pays">
+          <span className="pay-chip" style={{background:'#0098FE'}}>CLICK</span>
+          <span className="pay-chip" style={{background:'#1ABBED'}}>PAYME</span>
+          <span className="pay-chip" style={{background:'#7F4DFF'}}>UZUM</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AI demo
+function AIDemo() {
+  return (
+    <section className="s" id="ai">
+      <div className="wrap">
+        <span className="s-eyebrow">{COPY.uz.ai_eyebrow}</span>
+        <h2 className="display s-title">{COPY.uz.ai_title}</h2>
+        <p className="s-sub">{COPY.uz.ai_sub}</p>
+
+        <div className="ai-block">
+          <div className="ai-card">
+            <h4>Do'kon ma'lumotlari <span className="pill">Avto</span></h4>
+            <div className="kb">
+              <div className="kb-item">
+                <span className="k">Mahsulot</span>
+                <span className="v">Velvet Liptint №07 · 89 000 so'm · 24 dona omborda</span>
+              </div>
+              <div className="kb-item">
+                <span className="k">Yetkazib</span>
+                <span className="v">Toshkent bo'yicha bepul · Viloyatga 35 000 so'm</span>
+              </div>
+              <div className="kb-item">
+                <span className="k">Ish vaqti</span>
+                <span className="v">Du–Sh: 09:00–20:00 · Yakshanba: dam</span>
+              </div>
+              <div className="kb-item">
+                <span className="k">Qaytarish</span>
+                <span className="v">7 kun ichida ochilmagan mahsulot</span>
+              </div>
+            </div>
+          </div>
+          <div className="ai-card">
+            <h4>Mijoz bilan suhbat <span className="pill">Live</span></h4>
+            <div className="ai-chat">
+              <div className="b user">Salom, liptint qancha? Ertaga yetkazib bera olasizmi?</div>
+              <div className="b bot">
+                Salom! Velvet Liptint №07 — <b>89 000 so'm</b>. Toshkent bo'yicha ertangi kungacha bepul yetkazib beramiz 🚚
+                <div className="src">↳ manba: Mahsulot, Yetkazib</div>
+              </div>
+              <div className="b user">Yakshanba ham ishlaysizmi?</div>
+              <div className="b bot">
+                Yakshanba dam olamiz, lekin buyurtmangizni hozir qoldiring — dushanba ertasi jo'natamiz.
+                <div className="src">↳ manba: Ish vaqti</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Pricing
+function Pricing() {
+  const tiers = [
+    {
+      tag: 'Boshlovchi',
+      name: 'Start',
+      amount: '0',
+      per: '/oy',
+      desc: "Birinchi do'koningiz uchun. Komissiyasiz.",
+      list: ["50 buyurtmagacha/oy", "Asosiy bot va web app", "Click & Payme", "Telegram inbox"],
+      cta: 'Bepul boshlash',
+    },
+    {
+      tag: 'Eng mashhur',
+      name: 'Biznes',
+      amount: '249 000',
+      per: ' so\'m/oy',
+      desc: "O'sayotgan biznes uchun. AI yoqilgan.",
+      list: ["Cheksiz buyurtma", "AI avto-javob", "Instagram + Telegram", "Uzum Nasiya", "Click & Payme", "Yetkazib berish boshqaruvi", "Analitika"],
+      cta: 'Botni sinab ko\'rish',
+      hl: true,
+    },
+    {
+      tag: 'Komandalar uchun',
+      name: 'Premium',
+      amount: '690 000',
+      per: ' so\'m/oy',
+      desc: "Bir nechta xodim, bir nechta filial.",
+      list: ["Hammasi Biznes'dan", "Cheksiz xodim", "Filial boshqaruvi", "Maxsus AI dispatcher", "API kirish", "Shaxsiy support"],
+      cta: 'Sotuv jamoasi bilan',
+    },
+  ];
+  return (
+    <section className="s" id="pricing">
+      <div className="wrap">
+        <span className="s-eyebrow">{COPY.uz.pricing_eyebrow}</span>
+        <h2 className="display s-title">{COPY.uz.pricing_title}</h2>
+        <p className="s-sub">{COPY.uz.pricing_sub}</p>
+
+        <div className="pricing">
+          {tiers.map(t => (
+            <div className={'price-card'+(t.hl?' hl':'')} key={t.name}>
+              {t.hl && <span className="badge-pop">Tanlangan</span>}
+              <span className="price-tag">{t.tag}</span>
+              <div className="price-name">{t.name}</div>
+              <div className="price-amount">
+                {t.amount === '0' ? '0 so\'m' : t.amount}<span className="per">{t.per}</span>
+              </div>
+              <p className="price-desc">{t.desc}</p>
+              <ul className="price-list">
+                {t.list.map((li,i)=><li key={i}>{li}</li>)}
+              </ul>
+              <button className={t.hl?'btn btn-accent':'btn btn-ghost'} style={{justifyContent:'center'}}>{t.cta}</button>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FAQ
+function FAQ() {
+  const items = [
+    {
+      q: "Texnik bilim kerakmi?",
+      a: "Yo'q. heybazaar Telegram boti orqali ishlaydi. Agar siz Telegram'dan foydalana olsangiz, do'kon ocha olasiz."
+    },
+    {
+      q: "Komissiya olasizmi?",
+      a: "Yo'q. Faqat oddiy oylik obuna. Click, Payme yoki Uzum'ning o'z komissiyasi (1–2%) qoladi, biz ustiga hech narsa qo'shmaymiz."
+    },
+    {
+      q: "AI qanday ishlaydi?",
+      a: "Siz mahsulot, narx, yetkazib berish va boshqa ma'lumotlarni botga kiritasiz. AI shu ma'lumotlardan kelib chiqib mijozlarga avtomatik javob yozadi. Murakkab savol bo'lsa, sizga signal beradi."
+    },
+    {
+      q: "Mahsulotlarimni qanday qo'shaman?",
+      a: "Excel/Google Sheets'dan import qilish, qo'lda qo'shish yoki mavjud kanaldan ko'chirish — uchta variant bor. Eng tez yo'l: Excel."
+    },
+    {
+      q: "Boshqa platformalarda ham ishlaydimi?",
+      a: "Hozir Telegram va Instagram'ni qo'llaymiz. WhatsApp Business va TikTok Shop ustida ishlayapmiz, yaqin oylarda chiqadi."
+    },
+    {
+      q: "Ma'lumotlarim xavfsizmi?",
+      a: "Ha. Mijoz ma'lumotlari va to'lovlar shifrlangan, biz hech qachon mijoz raqamlarini sotmaymiz va reklama uchun ishlatmaymiz."
+    },
+  ];
+  const [open, setOpen] = useState(0);
+  return (
+    <section className="s" id="faq" style={{borderBottom:0}}>
+      <div className="wrap" style={{maxWidth:840}}>
+        <span className="s-eyebrow">{COPY.uz.faq_eyebrow}</span>
+        <h2 className="display s-title">{COPY.uz.faq_title}</h2>
+        <div className="faq">
+          {items.map((it,i)=>(
+            <div className="faq-row" key={i} data-open={open===i} onClick={()=>setOpen(open===i?-1:i)}>
+              <div className="faq-q">
+                <span>{it.q}</span>
+                <span className="pl">+</span>
+              </div>
+              <div className="faq-a">{it.a}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CTA + Footer
+function CTASection({ auth, canRegister }: { auth: SharedAuth; canRegister: boolean }) {
+  return (
+    <section className="cta">
+      <div className="wrap">
+        <h2 className="display cta-h">
+          {COPY.uz.cta_h_a} <span className="accent">{COPY.uz.cta_h_b}</span>
+        </h2>
+        <p className="cta-sub">{COPY.uz.cta_sub}</p>
+        
+        <div style={{display:'flex',gap:12,justifyContent:'center',flexWrap:'wrap'}}>
+          {auth?.user ? (
+             <Link href={dashboard()} className="btn btn-primary" style={{padding:'14px 22px',fontSize:15}}>Dashboard <span>→</span></Link>
+          ) : (
+             <>
+               {canRegister && (
+                 <Link href={register()} className="btn btn-primary" style={{padding:'14px 22px',fontSize:15}}>{COPY.uz.cta_primary} <span>→</span></Link>
+               )}
+               <button className="btn btn-ghost" style={{padding:'14px 22px',fontSize:15}}>{COPY.uz.cta_secondary}</button>
+             </>
+          )}
+        </div>
+
+        <div style={{marginTop:20,fontSize:13,color:'var(--ink-3)',fontFamily:'JetBrains Mono'}}>
+          @heybazaar_bot · t.me/heybazaar_bot
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Footer() {
+  return (
+    <footer>
+      <div className="wrap">
+        <div className="foot-grid">
+          <div>
+            <div className="logo">
+              heybazaar
+            </div>
+            <p className="foot-tagline">Kichik va o'rta biznes uchun Telegram-native commerce platformasi.</p>
+          </div>
+          <div>
+            <div className="foot-h">Mahsulot</div>
+            <ul className="foot-list">
+              <li>Imkoniyatlar</li>
+              <li>Qanday ishlaydi</li>
+              <li>Narxlar</li>
+              <li>Integratsiyalar</li>
+            </ul>
+          </div>
+          <div>
+            <div className="foot-h">Resurslar</div>
+            <ul className="foot-list">
+              <li>Boshlash uchun yo'riqnoma</li>
+              <li>API hujjatlari</li>
+              <li>Status</li>
+              <li>Blog</li>
+            </ul>
+          </div>
+          <div>
+            <div className="foot-h">Aloqa</div>
+            <ul className="foot-list">
+              <li>hello@heybazaar.app</li>
+              <li>t.me/heybazaar</li>
+              <li>+998 71 200 00 00</li>
+            </ul>
+          </div>
+        </div>
+        <div className="foot-bot">
+          <span>© 2026 heybazaar. Toshkent, O'zbekiston.</span>
+          <span style={{display:'flex',gap:18}}>
+            <span>Shartlar</span>
+            <span>Maxfiylik</span>
+          </span>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+export default function Welcome({ canRegister = true }: { canRegister?: boolean }) {
+  const [lang, setLang] = useState('uz');
+  const [landing, setLanding] = useState<LandingState>({
+    dark: LANDING_DEFAULTS.dark,
+    accent: LANDING_DEFAULTS.accent,
+    showAIDemo: LANDING_DEFAULTS.showAIDemo,
+    showPricing: LANDING_DEFAULTS.showPricing,
+  });
+  const { auth } = usePage<{ auth?: { user?: unknown } }>().props;
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = landing.dark ? 'dark' : 'light';
+    document.documentElement.style.setProperty('--accent', landing.accent);
+  }, [landing.dark, landing.accent]);
+
+  const toggleDark = () => {
+    setLanding((prev) => ({ ...prev, dark: !prev.dark }));
+  };
+
+  return (
+    <>
+      <Head title="heybazaar — Telegramda biznesingiz">
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+          rel="stylesheet"
+        />
+      </Head>
+      <Nav
+        lang={lang}
+        setLang={setLang}
+        auth={auth}
+        canRegister={canRegister}
+        dark={landing.dark}
+        onToggleDark={toggleDark}
+        showPricing={landing.showPricing}
+      />
+      <Hero auth={auth} canRegister={canRegister} />
+      <LogoStrip/>
+      <HowItWorks/>
+      <Features/>
+      {landing.showAIDemo && <AIDemo/>}
+      {landing.showPricing && <Pricing/>}
+      <FAQ/>
+      <CTASection auth={auth} canRegister={canRegister} />
+      <Footer/>
+    </>
+  );
 }
