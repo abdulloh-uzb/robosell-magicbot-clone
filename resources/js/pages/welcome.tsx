@@ -127,10 +127,6 @@ function Hero({ auth, canRegister }: { auth: SharedAuth; canRegister: boolean })
     <section className="hero">
       <div className="wrap hero-grid">
         <div>
-          <span className="yc-badge">
-            <span className="dot">Y</span>
-            {COPY.uz.yc_badge}
-          </span>
           <h1 className="display hero-title">
             {COPY.uz.hero_title_a}<br/>
             <span className="underline-accent">{COPY.uz.hero_title_b}</span><br/>
