@@ -9,6 +9,8 @@ declare module '@inertiajs/core' {
             flash: {
                 generated_password?: string;
             };
+            bots?: Array<{ id: number; name: string; username: string }>;
+            active_bot_id?: number | null;
             [key: string]: unknown;
         };
     }

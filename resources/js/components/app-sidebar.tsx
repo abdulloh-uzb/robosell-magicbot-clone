@@ -1,6 +1,5 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { BookOpen, Bot, ChevronDown, CreditCard, Folder, Image, LayoutGrid, MessageCircle, Package, Radio, ShieldAlert, ShoppingCart, Star, Tags, Users } from 'lucide-react';
-import { NavFooter } from '@/components/nav-footer';
+import { Bot, ChevronDown, CreditCard, Image, LayoutGrid, MessageCircle, Package, Radio, ShieldAlert, ShoppingCart, Star, Tags, Users } from 'lucide-react';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import {
@@ -18,9 +17,9 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
+import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 import AppLogo from './app-logo';
-import { dashboard } from '@/routes';
 
 const navGroups = [
     {
@@ -55,19 +54,6 @@ const navGroups = [
     },
 ];
 
-const footerNavItems: NavItem[] = [
-    {
-        title: 'Repository',
-        href: 'https://github.com/laravel/react-starter-kit',
-        icon: Folder,
-    },
-    {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#react',
-        icon: BookOpen,
-    },
-];
-
 const adminNavItems: NavItem[] = [
     {
         title: 'Manage Sellers',
@@ -77,9 +63,9 @@ const adminNavItems: NavItem[] = [
 ];
 
 export function AppSidebar() {
-    const { auth, bots, active_bot_id } = usePage<any>().props;
+    const { auth, bots, active_bot_id } = usePage().props;
     const isSuperAdmin = auth?.is_super_admin;
-    const activeBot = bots?.find((b: any) => b.id === active_bot_id) ?? bots?.[0];
+    const activeBot = bots?.find((b) => b.id === active_bot_id) ?? bots?.[0];
 
     const switchBot = (botId: number) => {
         router.post('/switch-bot', { bot_id: botId });
@@ -112,7 +98,7 @@ export function AppSidebar() {
                             </DropdownMenuTrigger>
                             {bots.length > 1 && (
                                 <DropdownMenuContent align="start" className="w-52">
-                                    {bots.map((b: any) => (
+                                    {bots.map((b) => (
                                         <DropdownMenuItem
                                             key={b.id}
                                             onClick={() => switchBot(b.id)}
@@ -145,7 +131,6 @@ export function AppSidebar() {
             </SidebarContent>
 
             <SidebarFooter>
-                <NavFooter items={footerNavItems} className="mt-auto" />
                 <NavUser />
             </SidebarFooter>
         </Sidebar>

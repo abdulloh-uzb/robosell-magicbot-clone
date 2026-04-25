@@ -12,6 +12,9 @@ export type User = {
 
 export type Auth = {
     user: User;
+    is_super_admin?: boolean;
+    is_seller?: boolean;
+    ai_configured?: boolean;
 };
 
 export type TwoFactorSetupData = {
